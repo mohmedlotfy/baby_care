@@ -1,0 +1,35 @@
+name: baby_care_app
+description: A new Flutter project for Baby Care.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  cupertino_icons: ^1.0.2
+  shared_preferences: ^2.2.3
+  http: ^1.2.0
+  get: ^4.6.6
+  google_fonts: ^6.2.1
+  font_awesome_flutter: ^10.8.0
+  image_picker: ^1.2.2
+  firebase_core: ^4.7.0
+  firebase_auth: ^6.4.0
+  cloud_firestore: ^6.3.0
+  firebase_storage: ^13.3.0
+  flutter_local_notifications: ^20.1.0
+  timezone: ^0.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true

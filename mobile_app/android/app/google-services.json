@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "185831751223",
+    "project_id": "beby-care",
+    "storage_bucket": "beby-care.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:185831751223:android:1553815449cc632f7f89b2",
+        "android_client_info": {
+          "package_name": "com.example.baby_care_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAimQx1eygszcmx3xNuxQRWmvNly7I1kXQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
