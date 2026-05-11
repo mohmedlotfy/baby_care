@@ -1,0 +1,12 @@
+.idea/
+.vscode/
+**/build/
+**/android/build/
+**/ios/Flutter/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+*.iml
+*.log

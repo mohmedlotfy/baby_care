@@ -1,0 +1,21 @@
+0 Background
+1 Speech
+2 Child speech, kid speaking
+3 Animal
+4 Silence
+5 Knock
+6 Tools
+7 Door
+8 Domestic sounds
+9 Glass
+10 Music
+11 Whimper
+12 Wail, moan
+13 Sigh
+14 Sobbing
+15 Chopping (food)
+16 Frying (food)
+17 Screaming
+18 Shout
+19 Yell
+20 Crying, sobbing

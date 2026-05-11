@@ -1,7 +1,7 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
+import '../../services/audio_recognition_service.dart';
 
 class CryAnalyzerScreen extends StatefulWidget {
   const CryAnalyzerScreen({super.key});
@@ -19,6 +19,10 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
   String? _resultEmoji;
   late AnimationController _pulseController;
   late AnimationController _waveController;
+  
+  final AudioRecognitionService _audioService = AudioRecognitionService();
+  StreamSubscription? _audioSubscription;
+  String _currentStatus = 'Idle';
 
   @override
   void initState() {
@@ -37,6 +41,8 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
   void dispose() {
     _pulseController.dispose();
     _waveController.dispose();
+    _audioSubscription?.cancel();
+    _audioService.stopRecognition();
     super.dispose();
   }
 
@@ -76,32 +82,77 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
     },
   ];
 
-  Future<void> _startRecording() async {
+  void _onRecognitionResult(AudioRecognitionResult result) {
+    if (result.recognition == 'Stopped' || result.recognition == 'Permission Denied') {
+      setState(() {
+        _isRecording = false;
+        _isAnalyzing = false;
+      });
+      return;
+    }
+
     setState(() {
-      _isRecording = true;
+      _currentStatus = result.status;
+      _isRecording = result.isRecording;
+      
+      // Update UI only if not ambient noise or if it's the final result
+      if (result.status != 'Normal/Ambient Noise') {
+        _mapStatusToResult(result.status);
+      }
+    });
+  }
+
+  void _mapStatusToResult(String status) {
+    Map<String, String>? result;
+    
+    if (status == 'Potential Pain/Colic') {
+      result = _analysisResults.firstWhere((element) => element['title'] == 'الطفل يشعر بالألم');
+    } else if (status == 'Sleepy/Tired') {
+      result = _analysisResults.firstWhere((element) => element['title'] == 'الطفل يريد النوم');
+    } else if (status == 'Hungry or Needs Diaper Change') {
+      // For now, let's pick "Hungry" as a primary guess
+      result = _analysisResults.firstWhere((element) => element['title'] == 'الطفل جائع');
+    }
+
+    if (result != null) {
+      setState(() {
+        _resultTitle = result!['title'];
+        _resultAdvice = result['advice'];
+        _resultEmoji = result['emoji'];
+        _isAnalyzing = false;
+      });
+    }
+  }
+
+  Future<void> _startRecording() async {
+    // Clear previous results
+    setState(() {
       _resultTitle = null;
       _resultAdvice = null;
       _resultEmoji = null;
+      _isRecording = true;
+      _isAnalyzing = false;
     });
 
-    // Simulate recording (5 seconds)
-    await Future.delayed(const Duration(seconds: 5));
+    // Listen to the stream if not already listening
+    _audioSubscription?.cancel();
+    _audioSubscription = _audioService.resultStream.listen(_onRecognitionResult);
 
+    // Start recognition
+    _audioService.startRecognition();
+  }
+
+  void _stopRecording() {
+    final lastResult = _audioService.stopRecognition();
     setState(() {
       _isRecording = false;
-      _isAnalyzing = true;
-    });
-
-    // Simulate AI processing (2 seconds)
-    await Future.delayed(const Duration(seconds: 2));
-
-    final result = _analysisResults[Random().nextInt(_analysisResults.length)];
-
-    setState(() {
-      _isAnalyzing = false;
-      _resultTitle = result['title'];
-      _resultAdvice = result['advice'];
-      _resultEmoji = result['emoji'];
+      if (lastResult != null && lastResult.status != 'Normal/Ambient Noise') {
+        _mapStatusToResult(lastResult.status);
+      } else if (_resultTitle == null) {
+        _resultTitle = 'لم يتم اكتشاف بكاء';
+        _resultEmoji = '🔇';
+        _resultAdvice = 'تأكد من قرب الموبايل من الطفل ووجود صوت واضح للبكاء ليتمكن الذكاء الاصطناعي من تحليله.';
+      }
     });
   }
 
@@ -188,11 +239,19 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
   );
 
   Widget _buildMicButton() => GestureDetector(
-    onTap: _isRecording || _isAnalyzing ? null : _startRecording,
+    onTap: () {
+      if (_isRecording) {
+        _stopRecording();
+      } else if (!_isAnalyzing) {
+        _startRecording();
+      }
+    },
     child: AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
-        final scale = _isRecording ? 1.0 + (_pulseController.value * 0.12) : 1.0;
+        // Animation only scales if recording AND hearing non-ambient sound
+        final shouldPulse = _isRecording && _currentStatus != 'Normal/Ambient Noise' && _currentStatus != 'Idle';
+        final scale = shouldPulse ? 1.0 + (_pulseController.value * 0.15) : 1.0;
         return Transform.scale(
           scale: scale,
           child: Container(
@@ -216,7 +275,7 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
             ),
             child: Center(
               child: Icon(
-                _isRecording ? Icons.mic : Icons.mic_none_rounded,
+                _isRecording ? Icons.stop_rounded : Icons.mic_none_rounded,
                 color: Colors.white,
                 size: 48,
               ),
@@ -231,7 +290,7 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
     String text;
     Color color;
     if (_isRecording) {
-      text = '🔴 جاري الاستماع لصوت الطفل...';
+      text = '🔴 الحالة: $_currentStatus';
       color = const Color(0xFFE8847C);
     } else if (_isAnalyzing) {
       text = '🧠 الذكاء الاصطناعي يحلل الصوت...';
@@ -245,6 +304,7 @@ class _CryAnalyzerScreenState extends State<CryAnalyzerScreen>
     }
     return Text(
       text,
+      textAlign: TextAlign.center,
       style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w600, color: color),
     );
   }
